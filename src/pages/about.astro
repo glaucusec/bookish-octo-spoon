@@ -1,0 +1,39 @@
+---
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout
+  title="About Plant Identifier"
+  description="Why Plant Identifier exists and how we approach free, honest plant identification by photo."
+  canonicalPath="/about/"
+>
+  <section class="page-hero">
+    <div class="container">
+      <p class="eyebrow">About us</p><h1>
+        A small tool for bigger curiosity.
+      </h1><p class="hero-lede" style="margin-left:0">
+        Plant Identifier helps people put a likely name to the plants around
+        them without an app install, account or paywall.
+      </p>
+    </div>
+  </section>
+  <section class="section-tight">
+    <div class="container prose">
+      <h2>Why we built it</h2><p>
+        When someone searches for a plant identifier, they usually have a photo
+        and one immediate question. We designed the site to answer that question
+        in the browser, then make uncertainty visible rather than pretending an
+        image model is always right.
+      </p><h2>How identification works</h2><p>
+        Your selected photos are resized in your browser and sent through our
+        secure endpoint to a specialist botanical identification provider. We
+        return a short, normalized list of likely matches and confidence scores.
+        We do not create public result URLs from uploads.
+      </p><h2>What we will not claim</h2><p>
+        Plant identification from an image is useful, but it is not expert
+        verification. The site should never be the only source used for
+        decisions about eating, medicine, toxicity or pet safety.
+      </p>
+    </div>
+  </section>
+</Layout>

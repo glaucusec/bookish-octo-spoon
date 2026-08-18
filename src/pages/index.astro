@@ -1,11 +1,332 @@
 ---
-import Welcome from '../components/Welcome.astro';
-import Layout from '../layouts/Layout.astro';
+import Layout from "../layouts/Layout.astro";
+import PlantUploader from "../components/PlantUploader.astro";
 
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+const faq = [
+  [
+    "Can I identify a plant by picture online for free?",
+    "Yes. Upload one to three pictures of the same plant and the free online plant identifier will return likely species matches with confidence scores. You do not need an account, payment card or app download. Daily limits help keep the service free.",
+  ],
+  [
+    "How does the AI plant identifier work?",
+    "The tool compares visible botanical features in your photos—such as leaf shape, veins, flowers, fruit and growth habit—with reference observations. It then ranks possible species instead of presenting one uncertain match as a guaranteed answer.",
+  ],
+  [
+    "Do I need to download a plant identifier app?",
+    "No. This plant identifier works as a web app in your phone or computer browser. You can take a new picture or choose one from your photo library without installing an iPhone or Android app.",
+  ],
+  [
+    "What photos give the most accurate plant match?",
+    "Start with a sharp, well-lit picture of the whole plant. Then add a close-up of a mature leaf and, when available, a flower, fruit, bark or stem. Avoid heavy filters, motion blur and crowded backgrounds.",
+  ],
+  [
+    "Can a plant be identified from a leaf picture alone?",
+    "Often, especially when the leaf has a distinctive shape, edge or vein pattern. However, unrelated plants can have very similar leaves. A whole-plant photo plus flowers, fruit, bark or stems usually makes the suggested match more useful.",
+  ],
+  [
+    "How accurate is an online plant identifier?",
+    "Accuracy varies with the species and photo quality. Common, distinctive plants are generally easier to match than seedlings, hybrids, rare plants or lookalike species. Treat the confidence score as a similarity estimate, not proof, and verify important identifications with a local expert or trusted botanical source.",
+  ],
+  [
+    "Can Google identify a plant from a picture?",
+    "Google Lens can suggest visually similar plants from a photo. This tool is a focused alternative that returns ranked botanical species matches and confidence scores in your browser. Whichever tool you use, verify the result when identification affects health, pets or edibility.",
+  ],
+  [
+    "What kinds of plants can I identify?",
+    "You can try houseplants, garden flowers, trees, succulents, weeds and many wild plants. Clear photos of distinctive features matter more than where the plant was found, although rare species and close lookalikes can still be difficult.",
+  ],
+  [
+    "Are my plant pictures stored or made public?",
+    "We resize your pictures in the browser, process them in memory and forward them to the identification provider. We do not intentionally keep permanent copies, publish uploads or turn them into public plant pages.",
+  ],
+  [
+    "Can I use a plant identification result to check if a plant is safe?",
+    "No. Photo identification can be wrong. Never use this tool alone to decide whether a plant, berry, mushroom or other material is edible, medicinal, poisonous or safe for people or pets. Ask a qualified local expert when safety matters.",
+  ],
+];
+const faqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: faq.map(([question, answer]) => ({
+    "@type": "Question",
+    name: question,
+    acceptedAnswer: { "@type": "Answer", text: answer },
+  })),
+};
+const appSchema = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: "Plant Identifier",
+  url: "https://plantidentifier.online/",
+  applicationCategory: "EducationalApplication",
+  operatingSystem: "Any",
+  offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+  description: "A free browser-based tool that identifies plants from photos.",
+};
 ---
 
-<Layout>
-	<Welcome />
+<Layout
+  title="Free Plant Identifier Online — Identify by Photo"
+  description="Identify a plant from a picture online for free. Our AI plant identifier returns likely species and confidence scores with no sign-up or app download."
+  canonicalPath="/"
+>
+  <script
+    slot="head"
+    type="application/ld+json"
+    set:html={JSON.stringify([faqSchema, appSchema])}
+  />
+  <section class="hero">
+    <div class="float-leaf one" aria-hidden="true"></div><div
+      class="float-leaf two"
+      aria-hidden="true"
+    >
+    </div>
+    <div class="container hero-layout">
+      <div class="hero-copy">
+        <p class="eyebrow">Free plant identifier by photo</p>
+        <h1>Free online plant identifier <span>by photo.</span></h1>
+        <p class="hero-lede">
+          Upload a picture to our AI plant identifier and get likely species
+          matches with confidence scores—right in your browser.
+        </p>
+        <div class="trust-row">
+          <span>No sign-up</span><span>Up to 3 photos</span><span
+            >No app install</span
+          >
+        </div>
+      </div>
+      <PlantUploader />
+    </div>
+  </section>
+
+  <section class="section band" id="how-it-works">
+    <div class="container">
+      <div class="section-heading">
+        <p class="eyebrow">Three honest steps</p><h2>
+          From mystery leaf to likely name.
+        </h2><p>
+          Clear photos in. Ranked possibilities out. We show confidence so you
+          always know how certain the match is.
+        </p>
+      </div>
+      <div class="process-grid">
+        <article class="process-card">
+          <div class="process-visual">
+            <img
+              src="/images/process/photograph-plant.jpg"
+              alt="A plant being photographed with a phone"
+              width="960"
+              height="720"
+              loading="lazy"
+              decoding="async"
+            />
+            <span class="number">1</span>
+          </div><div class="process-body">
+            <h3>Photograph the plant</h3><p>
+              Capture the whole plant, then add a leaf or flower close-up.
+            </p>
+          </div>
+        </article><article class="process-card">
+          <div class="process-visual">
+            <img
+              src="/images/process/compare-features.jpg"
+              alt="A close botanical study of a leaf, flower and stem"
+              width="960"
+              height="720"
+              loading="lazy"
+              decoding="async"
+            />
+            <span class="number">2</span>
+          </div><div class="process-body">
+            <h3>We compare its features</h3><p>
+              Your photos are resized before secure visual analysis.
+            </p>
+          </div>
+        </article><article class="process-card">
+          <div class="process-visual">
+            <img
+              src="/images/process/review-matches.jpg"
+              alt="Three distinct leaves arranged as possible plant matches"
+              width="960"
+              height="720"
+              loading="lazy"
+              decoding="async"
+            />
+            <span class="number">3</span>
+          </div><div class="process-body">
+            <h3>Review likely matches</h3><p>
+              See the top species and confidence—not a made-up certainty.
+            </p>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container">
+      <div class="section-heading">
+        <p class="eyebrow">Built for curious growers</p><h2>
+          A free plant identifier app—without the download.
+        </h2>
+      </div><div class="benefit-grid">
+        <article class="benefit">
+          <span class="benefit-mark" aria-hidden="true">
+            <svg viewBox="0 0 48 48" fill="none">
+              <circle cx="19" cy="19" r="9"></circle><circle
+                cx="19"
+                cy="19"
+                r="3"
+              ></circle><path d="M27 27l9 9"></path><path
+                d="M31 13c4 0 7 3 7 7"
+              ></path>
+            </svg>
+          </span>
+          <div class="match-visual" aria-hidden="true">
+            <div class="match-scan-ring"></div>
+            <svg class="match-leaf" viewBox="0 0 120 150" fill="none">
+              <path d="M60 137C25 119 12 85 24 49 34 20 65 11 98 10c2 35-3 70-28 94-11 11-18 21-10 33Z"></path>
+              <path d="M58 130C58 87 67 51 94 18M60 89 35 69M67 66l20-13M56 109l-20-9"></path>
+            </svg>
+            <div class="match-score"><strong>82%</strong><span>closest match</span></div>
+            <div class="match-alternative alt-one"><span></span><i>64%</i></div>
+            <div class="match-alternative alt-two"><span></span><i>41%</i></div>
+            <div class="match-sweep"></div>
+          </div>
+          <div>
+            <h3>One clear answer—with honest alternatives.</h3><p>
+              When confidence is low, we say so and show what else the plant
+              could be.
+            </p>
+          </div>
+        </article><article class="benefit">
+          <span class="benefit-mark" aria-hidden="true">
+            <svg viewBox="0 0 48 48" fill="none">
+              <rect x="13" y="6" width="22" height="36" rx="5"></rect><path
+                d="M21 35h6"
+              ></path><path d="M20 25c0-6 4-10 11-11 0 7-4 11-11 11Z"></path><path
+                d="M20 25c3-4 6-6 11-11"
+              ></path>
+            </svg>
+          </span><h3>Fast on your phone</h3><p>
+            Take a photo outside without installing another app.
+          </p>
+        </article><article class="benefit">
+          <span class="benefit-mark" aria-hidden="true">
+            <svg viewBox="0 0 48 48" fill="none">
+              <rect x="8" y="12" width="25" height="23" rx="4"></rect><path
+                d="m12 30 6-6 5 4 5-6 5 5"
+              ></path><path d="M16 8h20a4 4 0 0 1 4 4v19"></path><circle
+                cx="16"
+                cy="19"
+                r="2"
+              ></circle>
+            </svg>
+          </span><h3>More than one angle</h3><p>
+            Add leaf, flower and full-plant views for a better comparison.
+          </p>
+        </article><article class="benefit">
+          <span class="benefit-mark" aria-hidden="true">
+            <svg viewBox="0 0 48 48" fill="none">
+              <path d="M24 5 38 11v10c0 10-5 17-14 22-9-5-14-12-14-22V11l14-6Z"></path><path
+                d="M18 27c0-7 4-11 12-12 0 8-4 12-12 12Z"
+              ></path><path d="M18 27c3-4 7-8 12-12"></path>
+            </svg>
+          </span><h3>Private by design</h3><p>
+            Your uploads are not turned into public pages or kept as a photo
+            library.
+          </p>
+        </article><article class="benefit">
+          <span class="benefit-mark" aria-hidden="true">
+            <svg viewBox="0 0 48 48" fill="none">
+              <circle cx="24" cy="24" r="17"></circle><path
+                d="M17 17h14M17 22h14M19 17c8 0 9 11 0 11l11 10"
+              ></path>
+            </svg>
+          </span><h3>Free to identify</h3><p>
+            No account, payment card or subscription screen.
+          </p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section
+    class="section"
+    id="photo-tips"
+    style="background: var(--paper-deep)"
+  >
+    <div class="container tips">
+      <div>
+        <p class="eyebrow">Better photos, better matches</p><h2>
+          Give the leaf a little room to speak.
+        </h2><p>One thoughtful photo often beats five blurry ones.</p>
+      </div><div class="tip-list">
+        <div class="tip">
+          <b>01</b><div>
+            <h3>Start wide</h3><p>
+              Show the overall shape and growth habit of the plant.
+            </p>
+          </div>
+        </div><div class="tip">
+          <b>02</b><div>
+            <h3>Move in close</h3><p>
+              Capture a sharp leaf, including its edge, veins and how it joins
+              the stem.
+            </p>
+          </div>
+        </div><div class="tip">
+          <b>03</b><div>
+            <h3>Include what makes it distinctive</h3><p>
+              Flowers, fruit, bark, thorns and stems can dramatically improve a
+              match.
+            </p>
+          </div>
+        </div><div class="tip">
+          <b>04</b><div>
+            <h3>Use natural light</h3><p>
+              Avoid heavy filters, flash glare and cluttered backgrounds.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-tight">
+    <div class="container">
+      <p class="eyebrow">Explore by plant type</p><div class="tool-links">
+        <a href="/plant-identifier-by-photo/">Plant identifier by photo</a><a
+          href="/leaf-identifier/">Leaf identifier</a
+        ><a href="/flower-identifier/">Flower identifier</a><a
+          href="/houseplant-identifier/">Houseplant identifier</a
+        ><a href="/succulent-identifier/">Succulent identifier</a><a
+          href="/tree-identifier/">Tree identifier</a
+        >
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="faq">
+    <div class="container">
+      <div class="section-heading" style="margin-inline:auto;text-align:center">
+        <p class="eyebrow">Questions, answered</p><h2>
+          Free plant identifier FAQs.
+        </h2><p>
+          Straight answers about identifying plants online from a picture.
+        </p>
+      </div><div class="faq-list">
+        {
+          faq.map(([question, answer]) => (
+            <details>
+              <>
+                <summary>{question}</summary>
+                <p>{answer}</p>
+              </>
+            </details>
+          ))
+        }
+      </div>
+    </div>
+  </section>
 </Layout>

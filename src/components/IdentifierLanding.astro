@@ -1,0 +1,9 @@
+---
+import PlantUploader from './PlantUploader.astro';
+interface Props { eyebrow: string; title: string; intro: string; tips: string[]; }
+const { eyebrow, title, intro, tips } = Astro.props;
+---
+<section class="page-hero"><div class="container"><p class="eyebrow">{eyebrow}</p><h1>{title}</h1><p class="hero-lede" style="margin-left:0">{intro}</p><div class="trust-row" style="justify-content:flex-start"><span>Free to use</span><span>No sign-up</span><span>Up to 3 photos</span></div></div></section>
+<section class="section-tight"><div class="container"><PlantUploader /></div></section>
+<section class="section" style="background:var(--paper-deep)"><div class="container tips"><div><p class="eyebrow">Photo checklist</p><h2>Help us see what you see.</h2><p>Details that feel small to us can be decisive botanical clues.</p></div><div class="tip-list">{tips.map((tip, index) => <div class="tip"><b>{String(index + 1).padStart(2, '0')}</b><p>{tip}</p></div>)}</div></div></section>
+<section class="section-tight"><div class="container legal-note"><strong>Use identification as a starting point.</strong> Photo matching can be wrong. Never rely on this tool alone when deciding whether a plant is edible, medicinal, poisonous or safe for pets.</div></section>

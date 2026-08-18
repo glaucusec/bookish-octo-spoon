@@ -1,0 +1,173 @@
+<section class="uploader-shell" id="identifier" aria-labelledby="uploader-title">
+  <div class="uploader">
+    <div class="dropzone scan-corners" id="dropzone" role="button" tabindex="0" aria-controls="plant-files" aria-describedby="upload-hint">
+      <div>
+        <img class="camera-orb" src="/brand/worm-identifier-logo.png" alt="" width="82" height="82" aria-hidden="true" />
+        <h2 id="uploader-title">Show us your plant</h2>
+        <p>Start with the whole plant. Add a leaf or flower close-up for a stronger match.</p>
+        <div class="upload-actions">
+          <button class="button button-lime" id="browse-button" type="button">Choose photos</button>
+          <button class="button button-light" id="camera-button" type="button">Use camera</button>
+        </div>
+      </div>
+    </div>
+    <input id="plant-files" type="file" accept="image/*,.heic,.heif,.avif,.jfif,.bmp,.tif,.tiff" multiple hidden />
+    <input id="plant-camera" type="file" accept="image/*" capture="environment" hidden />
+    <p class="upload-hint" id="upload-hint">JPG, PNG, HEIC, WebP, AVIF, GIF, BMP and other images · up to 3 photos · 10 MB each</p>
+    <div class="previews" id="previews" aria-live="polite"></div>
+    <div class="submit-row" id="submit-row"><p id="photo-count"></p><button class="button button-lime" id="identify-button" type="button">Identify my plant</button></div>
+    <p class="status" id="status" role="status" aria-live="polite"></p>
+    <div class="results" id="results" aria-live="polite"></div>
+  </div>
+</section>
+
+<script>
+  const MAX_FILES = 3;
+  const MAX_SIZE = 10 * 1024 * 1024;
+  const imageExtensions = new Set(['jpg', 'jpeg', 'jpe', 'jfif', 'png', 'apng', 'webp', 'avif', 'gif', 'bmp', 'svg', 'heic', 'heif', 'tif', 'tiff']);
+  let selectedFiles = [];
+  let previewUrls = [];
+
+  const dropzone = document.querySelector('#dropzone');
+  const fileInput = document.querySelector('#plant-files');
+  const cameraInput = document.querySelector('#plant-camera');
+  const previews = document.querySelector('#previews');
+  const submitRow = document.querySelector('#submit-row');
+  const photoCount = document.querySelector('#photo-count');
+  const status = document.querySelector('#status');
+  const results = document.querySelector('#results');
+  const track = (event, properties = {}) => {
+    const analyticsWindow = window as Window & { dataLayer?: Array<Record<string, unknown>> };
+    analyticsWindow.dataLayer = analyticsWindow.dataLayer || [];
+    analyticsWindow.dataLayer.push({ event, ...properties });
+  };
+
+  document.querySelector('#browse-button')?.addEventListener('click', (event) => { event.stopPropagation(); fileInput?.click(); });
+  document.querySelector('#camera-button')?.addEventListener('click', (event) => { event.stopPropagation(); cameraInput?.click(); });
+  dropzone?.addEventListener('click', () => fileInput?.click());
+  dropzone?.addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); fileInput?.click(); } });
+  fileInput?.addEventListener('change', (event) => addFiles(event.target.files));
+  cameraInput?.addEventListener('change', (event) => addFiles(event.target.files));
+  document.addEventListener('paste', (event) => {
+    const images = Array.from(event.clipboardData?.items || [])
+      .filter((item) => item.kind === 'file')
+      .map((item) => item.getAsFile())
+      .filter((file) => file !== null && isImageFile(file));
+    if (!images.length) return;
+    event.preventDefault();
+    addFiles(images);
+  });
+  ['dragenter', 'dragover'].forEach((type) => dropzone?.addEventListener(type, (event) => { event.preventDefault(); dropzone.classList.add('is-dragging'); }));
+  ['dragleave', 'drop'].forEach((type) => dropzone?.addEventListener(type, (event) => { event.preventDefault(); dropzone.classList.remove('is-dragging'); }));
+  dropzone?.addEventListener('drop', (event) => addFiles(event.dataTransfer?.files));
+
+  function fileExtension(file) {
+    return file.name.split('.').pop()?.toLowerCase() || '';
+  }
+
+  function isImageFile(file) {
+    return file.type.startsWith('image/') || imageExtensions.has(fileExtension(file));
+  }
+
+  async function prepareImage(file) {
+    const extension = fileExtension(file);
+    const isHeic = ['heic', 'heif'].includes(extension) || /^image\/hei(c|f)/i.test(file.type);
+    if (isHeic) {
+      const { heicTo } = await import('heic-to/csp');
+      const converted = await heicTo({ blob: file, type: 'image/jpeg', quality: .9 });
+      return new File([converted], file.name.replace(/\.(heic|heif)$/i, '.jpg'), { type: 'image/jpeg' });
+    }
+    const isTiff = ['tif', 'tiff'].includes(extension) || file.type === 'image/tiff';
+    if (isTiff) {
+      const { default: UTIF } = await import('utif');
+      const buffer = await file.arrayBuffer();
+      const pages = UTIF.decode(buffer);
+      if (!pages.length) throw new Error('No TIFF image found');
+      UTIF.decodeImage(buffer, pages[0]);
+      const rgba = UTIF.toRGBA8(pages[0]);
+      const source = document.createElement('canvas'); source.width = pages[0].width; source.height = pages[0].height;
+      source.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(rgba), source.width, source.height), 0, 0);
+      const output = document.createElement('canvas'); output.width = source.width; output.height = source.height;
+      const context = output.getContext('2d'); context.fillStyle = '#fff'; context.fillRect(0, 0, output.width, output.height); context.drawImage(source, 0, 0);
+      const converted = await new Promise((resolve, reject) => output.toBlob((blob) => blob ? resolve(blob) : reject(new Error('TIFF conversion failed')), 'image/jpeg', .9));
+      return new File([converted], file.name.replace(/\.(tif|tiff)$/i, '.jpg'), { type: 'image/jpeg' });
+    }
+    const bitmap = await createImageBitmap(file);
+    bitmap.close();
+    return file;
+  }
+
+  async function addFiles(list) {
+    status.textContent = '';
+    const incoming = Array.from(list || []);
+    const totalBeforeLimit = selectedFiles.length + incoming.length;
+    const invalid = incoming.find((file) => !isImageFile(file) || file.size > MAX_SIZE);
+    if (invalid) { status.textContent = invalid.size > MAX_SIZE ? 'That photo is larger than 10 MB. Choose a smaller image.' : 'That file is not a recognized image.'; return; }
+    if (!incoming.length) return;
+    status.textContent = 'Preparing your photos…';
+    try {
+      const prepared = await Promise.all(incoming.map(prepareImage));
+      selectedFiles = [...selectedFiles, ...prepared].slice(0, MAX_FILES);
+      status.textContent = totalBeforeLimit > MAX_FILES ? 'You can add up to 3 photos of the same plant.' : '';
+      track('plant_upload_started', { photo_count: selectedFiles.length });
+      renderPreviews();
+    } catch (error) {
+      console.error('Image decoding failed:', error);
+      status.textContent = 'This image format could not be decoded in your browser. Try exporting it as JPG, PNG, HEIC, WebP or AVIF.';
+    }
+  }
+
+  function renderPreviews() {
+    previewUrls.forEach((url) => URL.revokeObjectURL(url));
+    previewUrls = [];
+    previews.innerHTML = '';
+    selectedFiles.forEach((file, index) => {
+      const item = document.createElement('div'); item.className = 'preview';
+      const image = document.createElement('img'); image.alt = `Selected plant photo ${index + 1}`;
+      const previewUrl = URL.createObjectURL(file); previewUrls.push(previewUrl); image.src = previewUrl;
+      const remove = document.createElement('button'); remove.type = 'button'; remove.setAttribute('aria-label', `Remove photo ${index + 1}`); remove.textContent = '×';
+      remove.addEventListener('click', () => { selectedFiles.splice(index, 1); renderPreviews(); });
+      item.append(image, remove); previews.append(item);
+    });
+    previews.classList.toggle('has-items', selectedFiles.length > 0);
+    submitRow.classList.toggle('show', selectedFiles.length > 0);
+    photoCount.textContent = `${selectedFiles.length} of ${MAX_FILES} photos selected`;
+  }
+
+  window.addEventListener('pagehide', () => {
+    previewUrls.forEach((url) => URL.revokeObjectURL(url));
+    previewUrls = [];
+  });
+
+  async function compressImage(file) {
+    const bitmap = await createImageBitmap(file);
+    const max = 1600; const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement('canvas'); canvas.width = Math.round(bitmap.width * scale); canvas.height = Math.round(bitmap.height * scale);
+    const context = canvas.getContext('2d'); context.fillStyle = '#fff'; context.fillRect(0, 0, canvas.width, canvas.height); context.drawImage(bitmap, 0, 0, canvas.width, canvas.height); bitmap.close();
+    return await new Promise((resolve, reject) => canvas.toBlob((blob) => blob ? resolve(new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' })) : reject(new Error('compress')), 'image/jpeg', .82));
+  }
+
+  document.querySelector('#identify-button')?.addEventListener('click', async () => {
+    if (!selectedFiles.length) { status.textContent = 'Add at least one plant photo first.'; return; }
+    const button = document.querySelector('#identify-button'); button.disabled = true; results.classList.remove('show');
+    track('plant_identification_submitted', { photo_count: selectedFiles.length });
+    status.textContent = 'Analyzing your plant… Comparing leaf shape, texture and botanical features.';
+    try {
+      const form = new FormData(); const processed = await Promise.all(selectedFiles.map(compressImage)); processed.forEach((file) => form.append('images', file));
+      const response = await fetch('/api/identify', { method: 'POST', body: form }); const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.message || 'We could not identify this plant right now.');
+      renderResults(data.matches); status.textContent = ''; track('plant_identification_success', { photo_count: selectedFiles.length, confidence_bucket: data.matches[0].confidence >= .75 ? 'high' : data.matches[0].confidence >= .45 ? 'medium' : 'low' });
+    } catch (error) { status.textContent = error instanceof Error ? error.message : 'The identification failed. Check your connection and try again.'; track('plant_identification_failed', { photo_count: selectedFiles.length }); }
+    finally { button.disabled = false; }
+  });
+
+  function esc(value = '') { const node = document.createElement('span'); node.textContent = value; return node.innerHTML; }
+  function renderResults(matches) {
+    const best = matches[0]; const percent = Math.round(best.confidence * 100); const low = percent < 45;
+    const heading = low ? 'We need a clearer look' : esc(best.commonNames?.[0] || best.scientificName);
+    if (low) track('low_confidence_result', { confidence_bucket: 'low' });
+    const message = low ? 'We could not identify this plant confidently. Add a close-up of a leaf, stem, flower or fruit.' : `Most likely match · ${esc(best.scientificName)}`;
+    results.innerHTML = `<div class="result-top"><div><p class="eyebrow">Identification result</p><h2>${heading}</h2><p>${message}</p></div><span class="confidence">${percent}% match</span></div>${best.family ? `<p>Family: <strong>${esc(best.family)}</strong></p>` : ''}<div class="alternatives"><h3>Other possible matches</h3>${matches.slice(1,3).map((item) => `<div class="alternative"><span>${esc(item.commonNames?.[0] || item.scientificName)}<br><small><em>${esc(item.scientificName)}</em></small></span><strong>${Math.round(item.confidence * 100)}%</strong></div>`).join('')}</div><p><small>Photo identification can be wrong. Never use this result alone to decide whether a plant is edible, medicinal, poisonous or pet-safe.</small></p>`;
+    results.classList.add('show'); results.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+</script>
